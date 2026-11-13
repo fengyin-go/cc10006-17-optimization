@@ -70,7 +70,7 @@ import { request } from '@/api/client'
 type Row = Record<string, string | number | null>
 
 const ENDPOINT = '/api/gold'
-const columns = ["视图编号", "上游清洗表", "聚合维度", "度量字段", "聚合函数", "物化策略", "更新频率", "数据新鲜度"]
+const columns = ["视图编号", "上游清洗表", "聚合维度", "度量字段", "聚合函数", "物化策略", "更新频率", "数据新鲜度", "质量监控对象", "质量阈值", "阈值版本", "告警级别"]
 const actions = ["提交校验", "启用聚合", "停用聚合"]
 const statuses = ["草稿", "待校验", "已启用", "已停用"]
 const stats = [{"label": "聚合视图总数", "value": 0}, {"label": "已启用视图", "value": 0}, {"label": "待校验视图", "value": 0}]

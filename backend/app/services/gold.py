@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.quality_registry import quality_registry
 from app.store import store
 
 MODULE = "gold"
 REQUIRED_FIELDS = ["视图编号", "上游清洗表", "聚合维度"]
+OPTIONAL_FIELDS = ["质量监控对象"]
 STATUS_ORDER = ["草稿", "待校验", "已启用", "已停用"]
 ACTION_RULES = {"提交校验": "待校验", "启用聚合": "已启用", "停用聚合": "已停用"}
 NEGATIVE_ACTIONS = ["停用聚合"]
@@ -28,10 +30,12 @@ class GoldService:
             rows = [row for row in rows if row.get("status") == status]
         total = len(rows)
         start = max(page - 1, 0) * size
-        return rows[start:start + size], total
+        # 阈值版本由质量登记簿补齐：聚合视图与治理规则读同一份生效版本。
+        return [quality_registry.decorate_gold(row) for row in rows[start:start + size]], total
 
     def get_entry(self, entry_id: int) -> dict[str, Any] | None:
-        return store.find(MODULE, entry_id)
+        entry = store.find(MODULE, entry_id)
+        return quality_registry.decorate_gold(entry) if entry else None
 
     def create_entry(self, values: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
         missing = [field for field in REQUIRED_FIELDS if not str(values.get(field) or "").strip()]
@@ -40,11 +44,14 @@ class GoldService:
         rows = store.rows(MODULE)
         entry = {"id": max((int(row.get("id", 0)) for row in rows), default=0) + 1}
         entry.update({field: values.get(field) for field in REQUIRED_FIELDS})
+        for field in OPTIONAL_FIELDS:
+            if values.get(field) is not None:
+                entry[field] = values.get(field)
         entry["status"] = STATUS_ORDER[0]
         entry["pending"] = True
         entry["abnormal"] = False
         rows.append(entry)
-        return entry, []
+        return quality_registry.decorate_gold(entry), []
 
     def run_action(self, entry_id: int, action: str) -> tuple[dict[str, Any] | None, str]:
         entry = store.find(MODULE, entry_id)
@@ -58,4 +65,4 @@ class GoldService:
         entry["status"] = target
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
-        return entry, f"聚合视图已{action}"
+        return quality_registry.decorate_gold(entry), f"聚合视图已{action}"

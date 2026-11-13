@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.quality_registry import quality_registry
 from app.store import store
 
 MODULE = "govern"
@@ -28,10 +29,12 @@ class GovernService:
             rows = [row for row in rows if row.get("status") == status]
         total = len(rows)
         start = max(page - 1, 0) * size
-        return rows[start:start + size], total
+        # 触发阈值与告警级别由质量登记簿补齐，避免治理规则沿用旧口径。
+        return [quality_registry.decorate_govern(row) for row in rows[start:start + size]], total
 
     def get_entry(self, entry_id: int) -> dict[str, Any] | None:
-        return store.find(MODULE, entry_id)
+        entry = store.find(MODULE, entry_id)
+        return quality_registry.decorate_govern(entry) if entry else None
 
     def create_entry(self, values: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
         missing = [field for field in REQUIRED_FIELDS if not str(values.get(field) or "").strip()]
@@ -58,4 +61,4 @@ class GovernService:
         entry["status"] = target
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
-        return entry, f"治理规则已{action}"
+        return quality_registry.decorate_govern(entry), f"治理规则已{action}"

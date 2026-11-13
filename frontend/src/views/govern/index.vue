@@ -70,7 +70,7 @@ import { request } from '@/api/client'
 type Row = Record<string, string | number | null>
 
 const ENDPOINT = '/api/govern'
-const columns = ["规则编号", "治理对象", "治理类型", "触发阈值", "执行动作", "执行频率", "影响范围", "回滚策略"]
+const columns = ["规则编号", "治理对象", "治理类型", "触发阈值", "执行动作", "执行频率", "影响范围", "回滚策略", "阈值版本", "告警级别", "恢复阈值"]
 const actions = ["提交校验", "启用治理", "停用治理"]
 const statuses = ["草稿", "待校验", "已启用", "已停用"]
 const stats = [{"label": "治理规则总数", "value": 0}, {"label": "已启用规则", "value": 0}, {"label": "待校验规则", "value": 0}]
